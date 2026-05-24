@@ -52,6 +52,19 @@ export default function NoteEditor({ note, onUpdate, onDelete }) {
     }
   });
 
+  // Strip all formatting on paste — plain text only
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const handlePaste = (e) => {
+      e.preventDefault();
+      const text = e.clipboardData.getData('text/plain');
+      document.execCommand('insertText', false, text);
+    };
+    editor.addEventListener('paste', handlePaste);
+    return () => editor.removeEventListener('paste', handlePaste);
+  }, [editing]);
+
   const autoSave = useCallback((html) => {
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
@@ -294,6 +307,20 @@ export default function NoteEditor({ note, onUpdate, onDelete }) {
         .ne-content td { padding:8px 11px; border:1px solid var(--border); color:var(--text2); font-size:13px; vertical-align:top; }
         .ne-content tr:nth-child(even) td { background:rgba(255,255,255,0.02); }
         .ne-content img.note-img { max-width:100%; border-radius:var(--radius); margin:10px 0; display:block; border:1px solid var(--border); }
+
+        /* Force Poppins on all pasted content */
+        .ne-content * {
+          font-family: 'Poppins', sans-serif !important;
+          font-size: inherit !important;
+          color: inherit !important;
+          background: none !important;
+          line-height: inherit !important;
+        }
+        /* But allow our own elements to keep their styles */
+        .ne-content h2, .ne-content h3 { font-size: revert !important; color: var(--text) !important; }
+        .ne-content a { color: var(--link) !important; }
+        .ne-content th { color: var(--text) !important; background: var(--bg3) !important; }
+        .ne-content td { color: var(--text2) !important; }
 
         @media (max-width:640px) {
           .ne-header { padding:10px 14px; }
