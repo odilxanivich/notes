@@ -18,7 +18,7 @@ function LinkModal({ onConfirm, onCancel }) {
         .lm-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;z-index:200;backdrop-filter:blur(4px);padding:16px;}
         .lm-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:24px;width:100%;max-width:360px;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 60px rgba(0,0,0,0.5);}
         .lm-title{font-size:16px;font-weight:700;color:var(--text);}
-        .lm-input{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:14px;color:var(--text);outline:none;font-family:'Poppins',sans-serif;}
+        .lm-input{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:16px;color:var(--text);outline:none;font-family:'Poppins',sans-serif;}
         .lm-input:focus{border-color:var(--accent);}
         .lm-actions{display:flex;gap:8px;justify-content:flex-end;}
         .lm-cancel{padding:8px 16px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;color:var(--text2);background:var(--bg3);font-family:'Poppins',sans-serif;}
@@ -28,7 +28,6 @@ function LinkModal({ onConfirm, onCancel }) {
   );
 }
 
-// Right-click context menu for table cells
 function TableMenu({ x, y, onAddRow, onDelRow, onAddCol, onDelCol, onClose }) {
   useEffect(() => {
     const close = () => onClose();
@@ -59,11 +58,32 @@ export default function NoteEditor({ note, onUpdate, onDelete }) {
   const [title, setTitle] = useState(note.title);
   const [showLink, setShowLink] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [tableMenu, setTableMenu] = useState(null); // {x, y, cell}
+  const [tableMenu, setTableMenu] = useState(null);
+  const [wrapHeight, setWrapHeight] = useState(null); // ✅ tracks real visible height
   const editorRef = useRef(null);
   const fileInputRef = useRef(null);
   const saveTimer = useRef(null);
   const isFirstRender = useRef(true);
+
+  // ✅ THE KEY FIX: listen to visualViewport so keyboard doesn't hide header
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const update = () => {
+      // visualViewport.height = actual visible area above keyboard
+      setWrapHeight(vv.height);
+    };
+
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    update(); // set initial value
+
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
+  }, []);
 
   useEffect(() => {
     setTitle(note.title);
@@ -140,7 +160,6 @@ export default function NoteEditor({ note, onUpdate, onDelete }) {
     setShowLink(false);
   };
 
-  // Default: 2 columns, 3 rows
   const insertTable = () => {
     const r = 3, c = 2;
     let h = '<table><thead><tr>' + Array(c).fill('<th contenteditable="true"><br></th>').join('') + '</tr></thead><tbody>';
@@ -149,7 +168,6 @@ export default function NoteEditor({ note, onUpdate, onDelete }) {
     exec('insertHTML', h);
   };
 
-  // --- Toolbar table buttons (cursor must be inside table) ---
   const getTable = () => {
     let node = window.getSelection()?.anchorNode;
     while (node && node.nodeName !== 'TABLE') node = node.parentNode;
@@ -182,7 +200,6 @@ export default function NoteEditor({ note, onUpdate, onDelete }) {
     const row = cell.closest('tr');
     if (!row) return;
     const table = row.closest('table');
-    // Don't delete if only 1 row left
     if (table && table.rows.length <= 1) return;
     row.remove();
     handleInput();
@@ -192,7 +209,6 @@ export default function NoteEditor({ note, onUpdate, onDelete }) {
   const addTableCol = (cellNode) => {
     const table = cellNode ? cellNode.closest('table') : getTable();
     if (!table) return;
-    // Find index of current column
     let colIdx = 0;
     if (cellNode) {
       const row = cellNode.closest('tr');
@@ -201,7 +217,6 @@ export default function NoteEditor({ note, onUpdate, onDelete }) {
     Array.from(table.rows).forEach((row, i) => {
       const cell = i === 0 ? document.createElement('th') : document.createElement('td');
       cell.contentEditable = 'true'; cell.innerHTML = '<br>';
-      // Insert after colIdx
       const ref = row.cells[colIdx + 1] || null;
       row.insertBefore(cell, ref);
     });
@@ -214,7 +229,6 @@ export default function NoteEditor({ note, onUpdate, onDelete }) {
     if (!cell) return;
     const table = cell.closest('table');
     if (!table) return;
-    // Don't delete if only 1 col left
     if (table.rows[0]?.cells.length <= 1) return;
     const row = cell.closest('tr');
     const colIdx = Array.from(row.cells).indexOf(cell);
@@ -248,7 +262,7 @@ export default function NoteEditor({ note, onUpdate, onDelete }) {
     if (next) setTimeout(() => editorRef.current?.focus(), 50);
   };
 
-  const togglePin = () => onUpdate(note.id, { pinned: note.pinned ? false : true });
+  const togglePin = () => onUpdate(note.id, { pinned: !note.pinned });
 
   const fmtDate = new Date(note.updated_at).toLocaleDateString('en-US', {
     month: 'short', day: 'numeric', year: 'numeric',
@@ -256,7 +270,8 @@ export default function NoteEditor({ note, onUpdate, onDelete }) {
   });
 
   return (
-    <div className="ne-wrap">
+    // ✅ Use wrapHeight from visualViewport instead of 100vh
+    <div className="ne-wrap" style={{ height: wrapHeight ? `${wrapHeight}px` : '100dvh' }}>
       {/* Header */}
       <div className="ne-header">
         <span className="ne-date">{fmtDate}{saving && <span className="ne-saving"> · Saving…</span>}</span>
@@ -295,38 +310,37 @@ export default function NoteEditor({ note, onUpdate, onDelete }) {
       {editing && (
         <div className="ne-toolbar">
           <div className="tb-row">
-            <button className="tb" onClick={() => exec('bold')}><b>B</b></button>
-            <button className="tb" onClick={() => exec('italic')}><i>I</i></button>
-            <button className="tb" onClick={() => exec('underline')}><u>U</u></button>
-            <button className="tb" onClick={() => exec('strikeThrough')}><s>S</s></button>
+            <button className="tb" onMouseDown={e => { e.preventDefault(); exec('bold'); }}><b>B</b></button>
+            <button className="tb" onMouseDown={e => { e.preventDefault(); exec('italic'); }}><i>I</i></button>
+            <button className="tb" onMouseDown={e => { e.preventDefault(); exec('underline'); }}><u>U</u></button>
+            <button className="tb" onMouseDown={e => { e.preventDefault(); exec('strikeThrough'); }}><s>S</s></button>
             <div className="tb-div" />
-            <button className="tb" onClick={() => exec('formatBlock','h2')}>H2</button>
-            <button className="tb" onClick={() => exec('formatBlock','h3')}>H3</button>
-            <button className="tb" onClick={() => exec('formatBlock','p')}>¶</button>
+            <button className="tb" onMouseDown={e => { e.preventDefault(); exec('formatBlock','h2'); }}>H2</button>
+            <button className="tb" onMouseDown={e => { e.preventDefault(); exec('formatBlock','h3'); }}>H3</button>
+            <button className="tb" onMouseDown={e => { e.preventDefault(); exec('formatBlock','p'); }}>¶</button>
             <div className="tb-div" />
-            <button className="tb" onClick={() => exec('insertUnorderedList')}>
+            <button className="tb" onMouseDown={e => { e.preventDefault(); exec('insertUnorderedList'); }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1" fill="currentColor"/><circle cx="3" cy="12" r="1" fill="currentColor"/><circle cx="3" cy="18" r="1" fill="currentColor"/></svg>
             </button>
-            <button className="tb" onClick={() => exec('insertOrderedList')}>
+            <button className="tb" onMouseDown={e => { e.preventDefault(); exec('insertOrderedList'); }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4M4 10h2M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
             </button>
             <div className="tb-div" />
-            <button className="tb" onClick={() => setShowLink(true)}>
+            <button className="tb" onMouseDown={e => { e.preventDefault(); setShowLink(true); }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
             </button>
-            <button className="tb" onClick={() => fileInputRef.current.click()}>
+            <button className="tb" onMouseDown={e => { e.preventDefault(); fileInputRef.current.click(); }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
             </button>
             <input ref={fileInputRef} type="file" accept="image/*" style={{ display:'none' }} onChange={e => { if(e.target.files[0]) uploadImage(e.target.files[0]); e.target.value=''; }} />
             <div className="tb-div" />
-            {/* Table controls */}
-            <button className="tb" onClick={insertTable} title="Insert table (2 cols)">
+            <button className="tb" onMouseDown={e => { e.preventDefault(); insertTable(); }} title="Insert table">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="1"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
             </button>
-            <button className="tb small-text add" onClick={addTableRow} title="Add row (click inside table first)">+Row</button>
-            <button className="tb small-text del" onClick={() => deleteTableRow(null)} title="Delete row (click inside row first)">−Row</button>
-            <button className="tb small-text add" onClick={() => addTableCol(null)} title="Add column (click inside table first)">+Col</button>
-            <button className="tb small-text del" onClick={() => deleteTableCol(null)} title="Delete column (click inside col first)">−Col</button>
+            <button className="tb small-text add" onMouseDown={e => { e.preventDefault(); addTableRow(); }} title="Add row">+Row</button>
+            <button className="tb small-text del" onMouseDown={e => { e.preventDefault(); deleteTableRow(null); }} title="Delete row">−Row</button>
+            <button className="tb small-text add" onMouseDown={e => { e.preventDefault(); addTableCol(null); }} title="Add col">+Col</button>
+            <button className="tb small-text del" onMouseDown={e => { e.preventDefault(); deleteTableCol(null); }} title="Delete col">−Col</button>
           </div>
         </div>
       )}
@@ -355,16 +369,27 @@ export default function NoteEditor({ note, onUpdate, onDelete }) {
       )}
 
       <style>{`
-        .ne-wrap { display:flex; flex-direction:column; height:100vh; background:var(--bg); overflow:hidden; }
+        .ne-wrap {
+          display: flex;
+          flex-direction: column;
+          /* ✅ height set via inline style from visualViewport — falls back to 100dvh */
+          background: var(--bg);
+          overflow: hidden;
+          /* ✅ anchor to top of visual viewport, not layout viewport */
+          position: fixed;
+          top: 0; left: 0; right: 0;
+        }
         .ne-header {
           display:flex; align-items:center; justify-content:space-between;
-          padding:12px 20px; border-bottom:1px solid var(--border); flex-shrink:0;
+          padding: 12px 20px;
+          padding-top: calc(env(safe-area-inset-top) + 12px);
+          border-bottom:1px solid var(--border); flex-shrink:0;
         }
-        .ne-date { font-size:11px; color:var(--text3); }
+        .ne-date { font-size:12px; color:var(--text3); }
         .ne-saving { color:var(--accent); }
         .ne-actions { display:flex; gap:2px; }
         .ne-btn {
-          width:32px; height:32px; border-radius:var(--radius-sm);
+          width:36px; height:36px; border-radius:var(--radius-sm);
           color:var(--text2); display:flex; align-items:center; justify-content:center;
           transition:background 0.12s, color 0.12s;
         }
@@ -379,9 +404,9 @@ export default function NoteEditor({ note, onUpdate, onDelete }) {
         .ne-title.editing {
           color:var(--text); background:transparent; border:none; outline:none;
           width:100%; border-bottom:1.5px solid var(--accent); padding-bottom:3px; margin-bottom:4px;
-          font-family:'Poppins',sans-serif;
+          font-family:'Poppins',sans-serif; font-size:26px;
         }
-        .ne-desc { font-size:12px; color:var(--text2); margin-bottom:4px; }
+        .ne-desc { font-size:13px; color:var(--text2); margin-bottom:4px; }
 
         .ne-toolbar {
           padding:6px 14px; border-bottom:1px solid var(--border);
@@ -391,7 +416,7 @@ export default function NoteEditor({ note, onUpdate, onDelete }) {
         .tb {
           padding:5px 7px; border-radius:6px; font-size:13px; font-weight:500;
           color:var(--text2); display:flex; align-items:center; justify-content:center;
-          min-width:28px; height:28px; transition:background 0.1s, color 0.1s; flex-shrink:0;
+          min-width:30px; height:30px; transition:background 0.1s, color 0.1s; flex-shrink:0;
         }
         .tb:hover { background:var(--bg3); color:var(--text); }
         .tb.small-text { font-size:11px; }
@@ -401,7 +426,10 @@ export default function NoteEditor({ note, onUpdate, onDelete }) {
 
         .ne-content {
           flex:1; overflow-y:auto; padding:16px 20px 40px;
-          font-size:15px; line-height:1.75; outline:none;
+          font-size:16px; line-height:1.75; outline:none;
+          /* ✅ allow scrolling inside content, block outer bounce */
+          overscroll-behavior: contain;
+          -webkit-overflow-scrolling: touch;
         }
         .ne-content.readonly { color:var(--text2); user-select:none; }
         .ne-content.editable { color:var(--text); cursor:text; }
@@ -420,7 +448,6 @@ export default function NoteEditor({ note, onUpdate, onDelete }) {
         .ne-content tr:nth-child(even) td { background:rgba(255,255,255,0.02); }
         .ne-content img.note-img { max-width:100%; border-radius:var(--radius); margin:10px 0; display:block; border:1px solid var(--border); }
 
-        /* Force Poppins on all pasted content */
         .ne-content * { font-family:'Poppins',sans-serif !important; font-size:inherit !important; color:inherit !important; background:none !important; line-height:inherit !important; }
         .ne-content h2, .ne-content h3 { font-size:revert !important; color:var(--text) !important; }
         .ne-content a { color:var(--link) !important; }
@@ -429,10 +456,11 @@ export default function NoteEditor({ note, onUpdate, onDelete }) {
         .ne-content td:focus, .ne-content th:focus { background:rgba(255,214,10,0.04) !important; }
 
         @media (max-width:640px) {
-          .ne-header { padding:10px 14px; }
+          .ne-header { padding:10px 14px; padding-top: calc(env(safe-area-inset-top) + 10px); }
           .ne-title-area { padding:12px 14px 0; }
           .ne-title { font-size:22px; }
-          .ne-content { padding:14px 14px 60px; font-size:15px; }
+          .ne-title.editing { font-size:22px; }
+          .ne-content { padding:14px 14px 60px; font-size:16px; }
           .ne-toolbar { padding:6px 10px; }
         }
         @media (max-width:900px) and (min-width:641px) {
