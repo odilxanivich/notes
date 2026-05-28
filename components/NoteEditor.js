@@ -60,10 +60,25 @@ export default function NoteEditor({ note, onUpdate, onDelete }) {
   const [showLink, setShowLink] = useState(false);
   const [saving, setSaving] = useState(false);
   const [tableMenu, setTableMenu] = useState(null); // {x, y, cell}
+  const [wrapHeight, setWrapHeight] = useState(null); // ✅ NEW
   const editorRef = useRef(null);
   const fileInputRef = useRef(null);
   const saveTimer = useRef(null);
   const isFirstRender = useRef(true);
+
+  // ✅ NEW: visualViewport listener so keyboard doesn't hide header
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => setWrapHeight(vv.height);
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    update();
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
+  }, []);
 
   useEffect(() => {
     setTitle(note.title);
@@ -182,7 +197,6 @@ export default function NoteEditor({ note, onUpdate, onDelete }) {
     const row = cell.closest('tr');
     if (!row) return;
     const table = row.closest('table');
-    // Don't delete if only 1 row left
     if (table && table.rows.length <= 1) return;
     row.remove();
     handleInput();
@@ -192,7 +206,6 @@ export default function NoteEditor({ note, onUpdate, onDelete }) {
   const addTableCol = (cellNode) => {
     const table = cellNode ? cellNode.closest('table') : getTable();
     if (!table) return;
-    // Find index of current column
     let colIdx = 0;
     if (cellNode) {
       const row = cellNode.closest('tr');
@@ -201,7 +214,6 @@ export default function NoteEditor({ note, onUpdate, onDelete }) {
     Array.from(table.rows).forEach((row, i) => {
       const cell = i === 0 ? document.createElement('th') : document.createElement('td');
       cell.contentEditable = 'true'; cell.innerHTML = '<br>';
-      // Insert after colIdx
       const ref = row.cells[colIdx + 1] || null;
       row.insertBefore(cell, ref);
     });
@@ -214,7 +226,6 @@ export default function NoteEditor({ note, onUpdate, onDelete }) {
     if (!cell) return;
     const table = cell.closest('table');
     if (!table) return;
-    // Don't delete if only 1 col left
     if (table.rows[0]?.cells.length <= 1) return;
     const row = cell.closest('tr');
     const colIdx = Array.from(row.cells).indexOf(cell);
@@ -256,7 +267,8 @@ export default function NoteEditor({ note, onUpdate, onDelete }) {
   });
 
   return (
-    <div className="ne-wrap">
+    // ✅ CHANGED: height driven by visualViewport, falls back to 100dvh
+    <div className="ne-wrap" style={{ height: wrapHeight ? `${wrapHeight}px` : '100dvh' }}>
       {/* Header */}
       <div className="ne-header">
         <span className="ne-date">{fmtDate}{saving && <span className="ne-saving"> · Saving…</span>}</span>
@@ -319,7 +331,6 @@ export default function NoteEditor({ note, onUpdate, onDelete }) {
             </button>
             <input ref={fileInputRef} type="file" accept="image/*" style={{ display:'none' }} onChange={e => { if(e.target.files[0]) uploadImage(e.target.files[0]); e.target.value=''; }} />
             <div className="tb-div" />
-            {/* Table controls */}
             <button className="tb" onClick={insertTable} title="Insert table (2 cols)">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="1"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
             </button>
@@ -355,7 +366,8 @@ export default function NoteEditor({ note, onUpdate, onDelete }) {
       )}
 
       <style>{`
-        .ne-wrap { display:flex; flex-direction:column; height:100vh; background:var(--bg); overflow:hidden; }
+        /* ✅ CHANGED: height:100vh → height set via inline style (visualViewport), overflow:hidden kept */
+        .ne-wrap { display:flex; flex-direction:column; background:var(--bg); overflow:hidden; }
         .ne-header {
           display:flex; align-items:center; justify-content:space-between;
           padding:12px 20px; border-bottom:1px solid var(--border); flex-shrink:0;
