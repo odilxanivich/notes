@@ -26,6 +26,24 @@ export default function Home() {
 
   useEffect(() => { fetchNotes(); }, [fetchNotes]);
 
+  // ✅ Push fake history entry when a note is open so back button works in-app
+  useEffect(() => {
+    if (!sidebarOpen) {
+      window.history.pushState({ note: true }, '');
+    }
+  }, [sidebarOpen]);
+
+  // ✅ Intercept browser/phone back button
+  useEffect(() => {
+    const handlePop = (e) => {
+      if (!sidebarOpen) {
+        setSidebarOpen(true);
+      }
+    };
+    window.addEventListener('popstate', handlePop);
+    return () => window.removeEventListener('popstate', handlePop);
+  }, [sidebarOpen]);
+
   const handleSelect = (id) => {
     setSelectedId(id);
     if (window.innerWidth <= 640) setSidebarOpen(false);
