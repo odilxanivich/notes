@@ -25,6 +25,16 @@ html, body, #__next {
   color: var(--text);
   height: 100%;
   overflow: hidden;
+
+  /* ✅ PWA fixes */
+  overscroll-behavior: none;           /* no rubber-band bounce */
+  -webkit-text-size-adjust: 100%;      /* no iOS font inflation on rotate */
+  text-size-adjust: 100%;
+}
+
+/* ✅ Use dvh so layout doesn't shift when browser chrome appears/hides */
+#__next {
+  height: 100dvh;
 }
 
 /* Tablet: narrower sidebar */
@@ -43,5 +53,9 @@ html, body, #__next {
 ::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 2px; }
 
 button { font-family: 'Poppins', sans-serif; cursor: pointer; border: none; background: none; }
-input, textarea { font-family: 'Poppins', sans-serif; }
+input, textarea {
+  font-family: 'Poppins', sans-serif;
+  /* ✅ prevents iOS from zooming in when focusing an input (font must be ≥16px) */
+  font-size: max(16px, 1em);
+}
 a { color: var(--link); }
