@@ -26,13 +26,13 @@ html, body, #__next {
   height: 100%;
   overflow: hidden;
 
-  /* ✅ PWA fixes */
+  /* PWA fixes */
   overscroll-behavior: none;           /* no rubber-band bounce */
   -webkit-text-size-adjust: 100%;      /* no iOS font inflation on rotate */
   text-size-adjust: 100%;
 }
 
-/* ✅ Use dvh so layout doesn't shift when browser chrome appears/hides */
+/* dvh so layout doesn't shift when browser chrome appears/hides */
 #__next {
   height: 100dvh;
 }
@@ -55,7 +55,7 @@ html, body, #__next {
 button { font-family: 'Poppins', sans-serif; cursor: pointer; border: none; background: none; }
 input, textarea {
   font-family: 'Poppins', sans-serif;
-  /* ✅ prevents iOS from zooming in when focusing an input (font must be ≥16px) */
+  /* prevents iOS zoom on input focus — must be ≥16px */
   font-size: max(16px, 1em);
 }
 a { color: var(--link); }

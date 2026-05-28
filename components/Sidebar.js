@@ -65,7 +65,7 @@ export default function Sidebar({ notes, selectedId, onSelect, onNew, onDelete, 
       </div>
 
       <div className="search-wrap">
-        <svg className="search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg className="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <circle cx="11" cy="11" r="8"/>
           <line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
@@ -104,7 +104,7 @@ export default function Sidebar({ notes, selectedId, onSelect, onNew, onDelete, 
       <style>{`
         .sidebar {
           width: var(--sidebar-w);
-          height: 100vh;
+          height: 100dvh;
           background: var(--surface);
           border-right: 1px solid var(--border);
           display: flex;
@@ -115,13 +115,17 @@ export default function Sidebar({ notes, selectedId, onSelect, onNew, onDelete, 
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 18px 16px 12px;
+          /* ✅ KEY FIX: push header below phone status bar */
+          padding: 14px 16px 14px;
+          padding-top: calc(env(safe-area-inset-top) + 14px);
           border-bottom: 1px solid var(--border);
           flex-shrink: 0;
+          min-height: calc(env(safe-area-inset-top) + 60px);
         }
-        .sidebar-title { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
+        /* ✅ Bigger title */
+        .sidebar-title { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
         .new-btn {
-          width: 32px; height: 32px;
+          width: 36px; height: 36px;
           border-radius: 50%;
           background: var(--accent);
           color: #000;
@@ -131,7 +135,7 @@ export default function Sidebar({ notes, selectedId, onSelect, onNew, onDelete, 
         }
         .new-btn:hover { transform: scale(1.1); }
         .logout-btn {
-          width: 32px; height: 32px;
+          width: 36px; height: 36px;
           border-radius: 50%;
           background: var(--bg3);
           color: var(--text3);
@@ -141,11 +145,11 @@ export default function Sidebar({ notes, selectedId, onSelect, onNew, onDelete, 
         .logout-btn:hover { background: var(--bg3); color: var(--text2); }
         .search-wrap {
           position: relative;
-          margin: 10px 10px 4px;
+          margin: 12px 12px 6px;
           flex-shrink: 0;
         }
         .search-icon {
-          position: absolute; left: 9px; top: 50%;
+          position: absolute; left: 10px; top: 50%;
           transform: translateY(-50%);
           color: var(--text3); pointer-events: none;
         }
@@ -154,8 +158,8 @@ export default function Sidebar({ notes, selectedId, onSelect, onNew, onDelete, 
           background: var(--bg3);
           border: none;
           border-radius: var(--radius-sm);
-          padding: 8px 10px 8px 28px;
-          font-size: 13px;
+          padding: 10px 12px 10px 32px;
+          font-size: 15px; /* ✅ was 13px — also prevents iOS zoom on focus */
           color: var(--text);
           outline: none;
           font-family: 'Poppins', sans-serif;
@@ -164,19 +168,19 @@ export default function Sidebar({ notes, selectedId, onSelect, onNew, onDelete, 
         .search-input:focus { box-shadow: 0 0 0 2px var(--accent); }
         .notes-list { flex: 1; overflow-y: auto; padding: 4px 0 20px; }
         .list-label {
-          font-size: 10px; font-weight: 600; color: var(--text3);
+          font-size: 11px; font-weight: 600; color: var(--text3);
           text-transform: uppercase; letter-spacing: 0.8px;
-          padding: 10px 16px 4px;
+          padding: 12px 16px 6px;
         }
         .note-item {
           display: flex; align-items: center;
-          padding: 10px 8px 10px 16px;
+          padding: 12px 10px 12px 16px;
           cursor: pointer;
           border-radius: var(--radius-sm);
-          margin: 1px 6px;
+          margin: 2px 8px;
           transition: background 0.12s;
           position: relative;
-          min-height: 56px;
+          min-height: 64px; /* ✅ was 56px — bigger tap target */
         }
         .note-item:hover { background: var(--bg3); }
         .note-item.active { background: var(--bg3); }
@@ -190,28 +194,28 @@ export default function Sidebar({ notes, selectedId, onSelect, onNew, onDelete, 
         }
         .note-item-inner { flex: 1; min-width: 0; }
         .note-item-title {
-          font-size: 13px; font-weight: 600; color: var(--text);
+          font-size: 15px; /* ✅ was 13px */
+          font-weight: 600; color: var(--text);
           white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        .note-item-meta { display: flex; gap: 6px; margin-top: 2px; align-items: center; }
-        .note-time { font-size: 10px; color: var(--text3); white-space: nowrap; flex-shrink: 0; }
+        .note-item-meta { display: flex; gap: 6px; margin-top: 3px; align-items: center; }
+        .note-time { font-size: 12px; color: var(--text3); white-space: nowrap; flex-shrink: 0; } /* ✅ was 10px */
         .note-desc {
-          font-size: 11px; color: var(--text2);
+          font-size: 12px; color: var(--text2); /* ✅ was 11px */
           white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
         .note-delete-btn {
           opacity: 0; color: var(--danger);
-          padding: 6px; border-radius: 4px;
+          padding: 8px; border-radius: 4px;
           transition: opacity 0.15s; flex-shrink: 0;
         }
         .note-item:hover .note-delete-btn { opacity: 1; }
-        /* Always show on touch devices */
         @media (hover: none) {
           .note-delete-btn { opacity: 0.4; }
         }
         .no-notes {
           text-align: center; color: var(--text3);
-          font-size: 13px; padding: 32px 16px; line-height: 1.6;
+          font-size: 15px; padding: 40px 16px; line-height: 1.6; /* ✅ was 13px */
         }
         .logout-overlay {
           position: absolute; inset: 0;
@@ -223,33 +227,36 @@ export default function Sidebar({ notes, selectedId, onSelect, onNew, onDelete, 
         .logout-box {
           background: var(--surface2);
           border-top: 1px solid var(--border);
-          padding: 20px 16px;
+          padding: 24px 16px;
+          padding-bottom: calc(env(safe-area-inset-bottom) + 24px); /* ✅ above home bar */
           width: 100%;
           display: flex; flex-direction: column; gap: 16px;
-          font-size: 14px; color: var(--text2);
+          font-size: 16px; color: var(--text2); /* ✅ was 14px */
         }
         .modal-cancel {
-          padding: 8px 16px; border-radius: var(--radius-sm);
-          font-size: 13px; font-weight: 500; color: var(--text2);
+          padding: 10px 18px; border-radius: var(--radius-sm);
+          font-size: 15px; font-weight: 500; color: var(--text2);
           background: var(--bg3); font-family: 'Poppins', sans-serif;
         }
         .modal-confirm {
-          padding: 8px 16px; border-radius: var(--radius-sm);
-          font-size: 13px; font-weight: 600;
+          padding: 10px 18px; border-radius: var(--radius-sm);
+          font-size: 15px; font-weight: 600;
           background: var(--accent); color: #000;
           font-family: 'Poppins', sans-serif;
         }
         .modal-confirm.danger { background: var(--danger); color: #fff; }
 
+        /* ✅ Mobile — already full width, just bump sizes */
         @media (max-width: 640px) {
           .sidebar { width: 100vw; }
-          .sidebar-title { font-size: 26px; }
-          .note-item { min-height: 62px; padding: 12px 8px 12px 16px; }
-          .note-item-title { font-size: 15px; }
-          .note-time, .note-desc { font-size: 12px; }
+          .sidebar-title { font-size: 30px; }
+          .note-item { min-height: 68px; padding: 14px 10px 14px 16px; }
+          .note-item-title { font-size: 16px; }
+          .note-time, .note-desc { font-size: 13px; }
+          .search-input { font-size: 16px; padding: 12px 12px 12px 34px; }
         }
         @media (max-width: 900px) and (min-width: 641px) {
-          .note-item-title { font-size: 13px; }
+          .note-item-title { font-size: 14px; }
         }
       `}</style>
     </aside>

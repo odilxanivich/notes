@@ -13,7 +13,7 @@ export default function Home() {
   const [showNew, setShowNew] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [search, setSearch] = useState('');
-  const [sidebarOpen, setSidebarOpen] = useState(true); // mobile toggle
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [loading, setLoading] = useState(true);
 
   const fetchNotes = useCallback(async () => {
@@ -26,7 +26,6 @@ export default function Home() {
 
   useEffect(() => { fetchNotes(); }, [fetchNotes]);
 
-  // On mobile, selecting a note hides sidebar
   const handleSelect = (id) => {
     setSelectedId(id);
     if (window.innerWidth <= 640) setSidebarOpen(false);
@@ -77,7 +76,7 @@ export default function Home() {
   const selectedNote = notes.find(n => n.id === selectedId) || null;
 
   if (loading) return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', color:'var(--text3)', fontSize:'14px' }}>
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100dvh', color:'var(--text3)', fontSize:'16px' }}>
       Loading…
     </div>
   );
@@ -86,7 +85,6 @@ export default function Home() {
     <>
       <Head><title>Notes</title></Head>
       <div className="app-layout">
-        {/* Sidebar */}
         <div className={`sidebar-wrapper ${sidebarOpen ? 'open' : 'closed'}`}>
           <Sidebar
             notes={filtered}
@@ -100,12 +98,10 @@ export default function Home() {
           />
         </div>
 
-        {/* Main */}
         <main className={`main-area ${!sidebarOpen ? 'full' : ''}`}>
-          {/* Mobile back button */}
           {!sidebarOpen && (
             <button className="back-btn" onClick={() => setSidebarOpen(true)}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <polyline points="15 18 9 12 15 6"/>
               </svg>
               Notes
@@ -141,7 +137,7 @@ export default function Home() {
       <style>{`
         .app-layout {
           display: flex;
-          height: 100vh;
+          height: 100dvh;
           overflow: hidden;
           position: relative;
         }
@@ -149,7 +145,7 @@ export default function Home() {
           width: var(--sidebar-w);
           min-width: var(--sidebar-w);
           flex-shrink: 0;
-          height: 100vh;
+          height: 100dvh;
           transition: transform 0.25s ease, width 0.25s ease;
         }
         .main-area {
@@ -162,9 +158,10 @@ export default function Home() {
         .back-btn {
           display: flex;
           align-items: center;
-          gap: 4px;
+          gap: 6px;
           padding: 12px 16px;
-          font-size: 15px;
+          padding-top: calc(env(safe-area-inset-top) + 12px);
+          font-size: 17px;
           font-weight: 600;
           color: var(--accent);
           background: none;
@@ -184,20 +181,19 @@ export default function Home() {
           text-align: center;
         }
         .empty-icon { font-size: 56px; filter: grayscale(1); opacity: 0.4; }
-        .empty-state p { font-size: 14px; font-weight: 500; }
+        .empty-state p { font-size: 16px; font-weight: 500; }
         .btn-primary {
           background: var(--accent);
           color: #000;
           font-weight: 600;
-          font-size: 14px;
-          padding: 10px 24px;
+          font-size: 15px;
+          padding: 12px 28px;
           border-radius: var(--radius-sm);
           transition: opacity 0.15s;
           font-family: 'Poppins', sans-serif;
         }
         .btn-primary:hover { opacity: 0.85; }
 
-        /* Mobile: sidebar takes full width, slides in/out */
         @media (max-width: 640px) {
           .app-layout { position: relative; }
           .sidebar-wrapper {
@@ -216,6 +212,7 @@ export default function Home() {
             width: 100vw;
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
+            padding-top: env(safe-area-inset-top);
           }
           .main-area:not(.full) {
             opacity: 0;
